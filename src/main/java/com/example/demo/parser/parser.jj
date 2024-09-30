@@ -1,242 +1,61 @@
-options {
-  JAVA_UNICODE_ESCAPE = true;
-  STATIC=false;
+PARSER_BEGIN(SimpleArithmeticParser)
+
+public class SimpleArithmeticParser {
+
+  public static void main(String[] args) throws ParseException {
+    System.out.println("Enter an expression: ");
+    SimpleArithmeticParser parser = new SimpleArithmeticParser(System.in);
+    try {
+        parser.Input(); // Entry point to start parsing
+        System.out.println("Expression parsed successfully.");
+    } catch (Exception e) {
+        System.out.println("Failed to parse expression: " + e.getMessage());
+    }
+  }
 }
 
-PARSER_BEGIN(ConditionParser)
-
-package org.javacc.utils;
-
-import java.io.StringReader;
-import java.util.Map;
-
-public class ConditionParser
-{
-    private Map<String, Object> options;
-    
-    public static void main(String... args) throws ParseException
-    {
-      test("F", false);
-      test("T", true);
-      test("F || T", true);
-      test("T || F", true);
-      test("T || will not be compiled )", true);
-      test("F && T", false);
-      test("T && T", true);
-      test("unknown", false);
-    }
-    
-    private static void test(String input, boolean expectedValue)  throws ParseException
-    {
-      ConditionParser cp = new ConditionParser(new StringReader(input));
-      Map<String,Object> values = new java.util.HashMap<String,Object>();
-      values.put("F", Boolean.FALSE);
-      values.put("T", Boolean.TRUE);
-      boolean value = cp.CompilationUnit(values);
-      System.out.println(input + " = " + value);
-      if (value != expectedValue)
-        throw new RuntimeException();
-    }
-}
-
-PARSER_END(ConditionParser)
-
-
-
-/* WHITE SPACE */
+PARSER_END(SimpleArithmeticParser)
 
 SKIP :
 {
-  " "
-| "\t"
-| "\n"
-| "\r"
-| "\f"
-
-}
-
-/* COMMENTS */
-
-MORE :
-{
-  "//" : IN_SINGLE_LINE_COMMENT
-|
-  <"/**" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
-|
-  "/*" : IN_MULTI_LINE_COMMENT
-}
-
-<IN_SINGLE_LINE_COMMENT>
-SPECIAL_TOKEN :
-{
-  <SINGLE_LINE_COMMENT: "\n" | "\r" | "\r\n" > : DEFAULT
-}
-
-<IN_FORMAL_COMMENT>
-SPECIAL_TOKEN :
-{
-  <FORMAL_COMMENT: "*/" > : DEFAULT
-}
-
-<IN_MULTI_LINE_COMMENT>
-SPECIAL_TOKEN :
-{
-  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
-}
-
-<IN_SINGLE_LINE_COMMENT,IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
-MORE :
-{
-  < ~[] >
+  " " | "\t" | "\n" | "\r" // Ignore whitespace
 }
 
 TOKEN :
 {
-  < LPAREN: "(" >
-| < RPAREN: ")" >
+  < PLUS: "+" > |
+  < MINUS: "-" > |
+  < MULT: "*" > |
+  < DIV: "/" > |
+  < NUMBER: (["0"-"9"])+ > // Match any sequence of digits
 }
 
-/* OPERATORS */
-
-TOKEN :
-{
-  < BANG: "!" >
-| < SC_OR: "||" >
-| < SC_AND: "&&" >
-}
-
-boolean CompilationUnit(Map<String,Object> options):
-{
-	boolean value;
-    this.options = options;
-}
-{
-  value = ConditionalExpression()
-  
-  { return value; }
-}
-
-boolean ConditionalExpression():
-{
-	boolean value;
-}
-{
-  value = ConditionalAndExpression() 
-  	{ if (value) return true; }
-  	
-  ( "||" 
-  	value = ConditionalAndExpression()
-  	    { if (value) return true; }
-  )*
-  
-  { return false; }
-}
-
-boolean ConditionalAndExpression():
-{
-	boolean value;
-}
-{
-  value = UnaryExpressionNotPlusMinus()
-  	{ if (!value) return false; }
-  
-  ( "&&"
-    value = UnaryExpressionNotPlusMinus()
-  	    { if (!value) return false; }
-  )*
-  
-  { return true; }
-}
-
-
-boolean UnaryExpressionNotPlusMinus():
-{
-	boolean value;
-}
-{
-  ( "~" | "!" ) value = UnaryExpressionNotPlusMinus() { return !value; }
-  | value = UnaryExpression()    { return value; }
-}
-
-boolean UnaryExpression():
-{
-	boolean value;
-}
-{
-  value = Literal()		{ return value; }
-|
-  "(" value = ConditionalExpression() ")" { return value; }
-|
-  value = Name()  { return value; } 
-}
-
-boolean Literal():
-{
-	boolean value;
-}
-{
-  value = BooleanLiteral()     { return value; }
-}
-
-boolean BooleanLiteral() :
+void Input() :
 {}
 {
-   <TRUE>    { return true; }
- | <FALSE>   { return false; }
+  Expression() // Call to start parsing an expression
 }
 
-boolean Name() :
+void Expression() :
+{}
 {
-  String name;
-}
-{
-	<IDENTIFIER>
-	
-	{
-	    name = getToken(0).image.trim();
-	    
-	    Object obj = options.get(name);
-	    
-	    if (obj instanceof Boolean)
-	    {
-	      return ((Boolean)obj).booleanValue();
-	    }
-	    else if (obj instanceof String)
-	    {
-	      String string = ((String)obj).trim();
-	      return string.length() > 0 && !string.equalsIgnoreCase("false") && !string.equalsIgnoreCase("no");
-	    }
-	    
-	    return false;
-	}
+  Term()
+  (
+    ( <PLUS> | <MINUS> ) Term()
+  )*
 }
 
-/* IDENTIFIERS */
-
-TOKEN :
+void Term() :
+{}
 {
-  < TRUE: "true" >
-|
-  < FALSE: "false" >
-|
-  < IDENTIFIER: <LETTER> (<PART_LETTER>)* >
-|
-  < #LETTER:
-      [  
-         "$",
-         "A"-"Z",
-         "_",
-         "a"-"z"
-      ]
-  >
-|
-  < #PART_LETTER:
-      [
-         "$",
-         "0"-"9",
-         "A"-"Z",
-         "_",
-         "a"-"z"
-      ]
-  >
+  Factor()
+  (
+    ( <MULT> | <DIV> ) Factor()
+  )*
+}
+
+void Factor() :
+{}
+{
+  <NUMBER>
 }
