@@ -1,4 +1,4 @@
-package com.example.demo;
+package io.github.tayssirgh;
 
 import net.thevpc.nuts.NSession;
 import net.thevpc.nuts.io.NPrintStream;

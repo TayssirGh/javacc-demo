@@ -1,6 +1,6 @@
-package com.example.demo.controller;
+package io.github.tayssirgh.controller;
 
-import com.example.demo.parser.generated.SimpleArithmeticParser;
+import io.github.tayssirgh.parser.generated.SimpleArithmeticParser;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
